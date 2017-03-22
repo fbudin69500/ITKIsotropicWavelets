@@ -15,6 +15,7 @@ itk_module(IsotropicWavelets
     ITKRegistrationCommon
     ITKConvolution
   TEST_DEPENDS
+    SplitComponents
     ITKTestKernel
     ITKVtkGlue
   EXCLUDE_FROM_DEFAULT
@@ -29,6 +30,7 @@ itk_module(IsotropicWavelets
     ITKRegistrationCommon
     ITKConvolution
   TEST_DEPENDS
+    SplitComponents
     ITKTestKernel
   EXCLUDE_FROM_DEFAULT
   DESCRIPTION

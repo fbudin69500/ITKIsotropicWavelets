@@ -26,12 +26,12 @@
 #include "itkInverseFFTImageFilter.h"
 
 #include "itkVectorInverseFFTImageFilter.h"
-
+#include <itkSplitComponentsImageFilter.h>
 #include "itkTestingMacros.h"
 
 #include <string>
 #include <cmath>
-
+#include <sstream>
 
 // Visualize for dev/debug purposes. Set in cmake file. Requires VTK
 #ifdef ITK_VISUALIZE_TESTS
@@ -48,9 +48,17 @@ int itkPhaseAnalysisSoftThresholdImageFilterTest( int argc, char* argv[] )
     }
 
   const std::string inputImage  = argv[1];
-  const std::string outputImage = argv[2];
+  std::string outputImage = argv[2];
+  
+  size_t found = outputImage.find('.');
+  std::string outputExtension = ".nrrd";
+  if(found!=std::string::npos)
+  {
+    outputExtension = outputImage.substr(found);
+    outputImage.resize(found);
+  }
 
-  const unsigned int Dimension = 3;
+  const unsigned int Dimension = 2;
   typedef float                               PixelType;
   typedef itk::Image< PixelType, Dimension >  ImageType;
   typedef itk::ImageFileReader< ImageType >   ReaderType;
@@ -87,7 +95,22 @@ int itkPhaseAnalysisSoftThresholdImageFilterTest( int argc, char* argv[] )
   VectorInverseFFTType::Pointer vecInverseFFT = VectorInverseFFTType::New();
 
   vecInverseFFT->SetInput( monoFilter->GetOutput() );
-
+  // HACKKKKK!!! Float
+  typedef float ComponentType;
+  typedef itk::Image<ComponentType ,Dimension> OutputComponentImageType;
+  typedef itk::SplitComponentsImageFilter<typename VectorInverseFFTType::OutputImageType, OutputComponentImageType, 3> SplitFilter;
+  typename SplitFilter::Pointer splitFilter = SplitFilter::New();
+  splitFilter->SetInput(vecInverseFFT->GetOutput());
+  splitFilter->Update();
+  for( unsigned int ii = 0 ; ii < vecInverseFFT->GetOutput()->GetNumberOfComponentsPerPixel(); ++ii)
+  {
+    itk::ImageFileWriter<OutputComponentImageType>::Pointer monoWriter = itk::ImageFileWriter<OutputComponentImageType>::New();
+    std::ostringstream ss;
+    ss << outputImage << ii << outputExtension;
+    monoWriter->SetFileName(ss.str());
+    monoWriter->SetInput(splitFilter->GetOutput(ii));
+    monoWriter->Update();
+  }
   TRY_EXPECT_NO_EXCEPTION( vecInverseFFT->Update() );
 
   // Input to the PhaseAnalysisSoftThreshold
@@ -99,7 +122,7 @@ int itkPhaseAnalysisSoftThresholdImageFilterTest( int argc, char* argv[] )
   EXERCISE_BASIC_OBJECT_METHODS( phaseAnalyzer, PhaseAnalysisSoftThresholdImageFilter,
     PhaseAnalysisImageFilter );
 
-  bool applySoftThreshold = true;
+  bool applySoftThreshold = false;
   TEST_SET_GET_BOOLEAN( phaseAnalyzer, ApplySoftThreshold, applySoftThreshold );
 
   /*PhaseAnalysisSoftThresholdFilterType::OutputImagePixelType numOfSigmas;
@@ -120,6 +143,25 @@ int itkPhaseAnalysisSoftThresholdImageFilterTest( int argc, char* argv[] )
     phaseAnalyzer->GetOutputAmplitude();
   PhaseAnalysisSoftThresholdFilterType::OutputImageType::Pointer phase =
     phaseAnalyzer->GetOutputPhase();
+
+  typedef itk::ImageFileWriter<PhaseAnalysisSoftThresholdFilterType::OutputImageType> WriterType;
+
+  std::ostringstream ss;
+  ss << outputImage << "Cos"<< outputExtension;
+  WriterType::Pointer writer = WriterType::New();
+  writer->SetFileName(ss.str());
+  writer->SetInput(cosPhase);
+  writer->Update();
+  ss.str("");
+  ss << outputImage << "Amp" << outputExtension;
+  writer->SetFileName(ss.str());
+  writer->SetInput(amp);
+  writer->Update();
+  ss.str("");
+  ss << outputImage << "Phase" << outputExtension;
+  writer->SetFileName(ss.str());
+  writer->SetInput(phase);
+  writer->Update();
 
 #ifdef ITK_VISUALIZE_TESTS
   itk::Testing::ViewImage( cosPhase.GetPointer(), "PhaseAnalyzer(Soft) output" );

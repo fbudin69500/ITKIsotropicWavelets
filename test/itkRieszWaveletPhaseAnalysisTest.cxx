@@ -42,6 +42,7 @@
 #include "itkTestingMacros.h"
 
 #include <string>
+#include <sstream>
 
 // Visualize for dev/debug purposes. Set in cmake file. Requires VTK
 #ifdef ITK_VISUALIZE_TESTS
@@ -51,7 +52,7 @@
 
 template<unsigned int VDimension, typename TWaveletFunction >
 int runRieszWaveletPhaseAnalysisTest( const std::string& inputImage,
-                                      const std::string&, //outputImage
+                                      const std::string& outputImage,
                                       const unsigned int& inputLevels,
                                       const unsigned int& inputBands)
 {
@@ -148,6 +149,25 @@ int runRieszWaveletPhaseAnalysisTest( const std::string& inputImage,
     phaseAnalyzer->SetApplySoftThreshold( false );
 
     phaseAnalyzer->Update();
+
+    typedef typename itk::ImageFileWriter<typename PhaseAnalysisFilter::OutputImageType> WriterType;
+    typename WriterType::Pointer writer = WriterType::New();
+    std::ostringstream ss;
+    ss << outputImage << i <<".nrrd";
+    writer->SetFileName(ss.str());
+    writer->SetInput(phaseAnalyzer->GetOutputCosPhase());
+    writer->Update();
+
+    ss.str("");
+    ss << outputImage << i <<".nrrd";
+    writer->SetFileName(ss.str());
+    writer->SetInput(phaseAnalyzer->GetOutputAmplitude());
+    writer->Update();
+    ss.str("");
+    ss << outputImage << i <<".nrrd";
+    writer->SetFileName(ss.str());
+    writer->SetInput(phaseAnalyzer->GetOutputPhase());
+    writer->Update();
 
     fftForwardPhaseFilter->SetInput( phaseAnalyzer->GetOutputCosPhase() );
 

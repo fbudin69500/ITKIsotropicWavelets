@@ -25,7 +25,7 @@ set(IsotropicWaveletsTests
     itkFFTPadPositiveIndexImageFilterTest.cxx
     # Output data for each wavelet to visualize with python.
     # TODO: Add unit test for each IsoWavelet?
-    itkIsotropicWaveletFrequencyFunctionTest.cxx
+#    itkIsotropicWaveletFrequencyFunctionTest.cxx
     #Isotropic Wavelet
     itkWaveletFrequencyFilterBankGeneratorTest.cxx
     itkWaveletFrequencyForwardTest.cxx
